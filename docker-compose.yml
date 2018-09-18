@@ -1,0 +1,12 @@
+version: '3'
+services:
+  webserver:
+    build:
+      context: web
+      dockerfile: Dockerfile
+
+  blockchain:
+    image: blockchain:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
