@@ -10,21 +10,29 @@ import (
 	"sync"
 	"time"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 	"github.com/davecgh/go-spew/spew"
 	"net"
 	"github.com/mattpaletta/prime-blockchain/blockchain"
 	"context"
 )
 
-type bookServiceServer struct {}
+type Server struct {}
 
-func (s *bookServiceServer) GetBlock(context context.Context, block *blockchain.BlockRequest) (*blockchain.Block, error) {
-	return *Blockchain[block.Index], nil
+func (s *Server) GetBlock(context context.Context, in *blockchain.BlockRequest) (*blockchain.Block, error) {
+	my_block := Blockchain[in.Index]
+	return &blockchain.Block{
+		Index: my_block.Index,
+		Timestamp: my_block.Timestamp,
+		VAL: my_block.VAL,
+		PrevHash: my_block.PrevHash,
+		Difficulty: my_block.Difficulty,
+	}, nil
 }
 
 const difficulty = 1
 
-var Blockchain []*blockchain.Block
+var Blockchain []blockchain.Block
 
 var mutex = &sync.Mutex{}
 
@@ -36,9 +44,10 @@ func run() error {
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
-	var opts []grpc.ServerOption
-	grpcServer := grpc.NewServer(opts...)
-	blockchain.RegisterBookServiceServer(grpcServer, bookServiceServer{})
+	grpcServer := grpc.NewServer()
+	blockchain.RegisterBookServiceServer(grpcServer, &Server{})
+	reflection.Register(grpcServer)
+	fmt.Println("Server Listening.")
 
 	if err := grpcServer.Serve(lis); err != nil {
 		return err
